@@ -60,6 +60,7 @@ Duplicate datetime data are dropped from the time table during ETL process
 
 ## Data Model
 The data is after executing the ETL pipeline will be in dimensional model form. There are 3 dimensional tables and 2 fact tables.
+
 ![dimensional model](https://github.com/OmarAlghamdi/dend-capstone/blob/master/out/model.png)
 
 ## The ETL Pipeline
