@@ -60,7 +60,7 @@ Duplicate datetime data are dropped from the time table during ETL process
 
 ## Data Model
 The data is after executing the ETL pipeline will be in dimensional model form. There are 3 dimensional tables and 2 fact tables.
-<< ADD IMAGE HERE >>
+![dimensional model](https://github.com/OmarAlghamdi/dend-capstone/blob/master/out/model.png)
 
 ## The ETL Pipeline
 Since the data is in CSV format, stored in S3 and required date & time  extraction and transformation from the all 4 csv files from all . I chose Spark to do the job because 
