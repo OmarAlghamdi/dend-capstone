@@ -75,6 +75,7 @@ The reason this model is chosen is to ease business analysis on the data and all
 - Which stations are not profitable?
 
 The data is after executing the ETL pipeline will be in dimensional model form. There are 3 dimensional tables and 2 fact tables.
+
 ![dimensional model](https://github.com/OmarAlghamdi/dend-capstone/blob/master/out/model.png)
 
 For more details about each filed see the data dictionary at the end of this page.
