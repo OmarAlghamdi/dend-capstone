@@ -3,6 +3,7 @@ This is the final project in Udacity's Data Engineering Nanodegree.
 
 In this project I put what I learned through the namenodegree into work. I acquired date, analyzed it and applied an ETL process to it using Spark to enable business analysis on the date.
 
+## Step 1:
 ## Source Data
 Source data are bike-share data located in the Bay Area, CA. the original data is in csv format and it consist of 4 parts
 - `station.csv` 70 rows
@@ -13,6 +14,14 @@ Source data are bike-share data located in the Bay Area, CA. the original data i
 I also added additional CSV file that maps cities to zip codes to allow analysis based on weather data in specific city.
 
 The data is about 2GB in size and hosted on public S3 bucket `omar-dend`. the region of the bucket is `us-west-2`. The data was taking from Kaggle, you can find them [here](https://www.kaggle.com/benhamner/sf-bay-area-bike-share)
+
+The purpose of carrying ETL process is to prepare the data for business analyses to help the bike share company understand demand & patterns through the Bay Area and be able to take data driven decision when it come to expansions, marketing, and operation in general. 
+
+## Step 2
+## Data Quality
+The data is in high quality, no cleaning is needed. There are few measurements related to weather are missing from the data (few cells).
+
+Duplicate datetime data are dropped from the time table during ETL process
 
 ### Station
 Station data is about bike docking stations. It consists of 7 columns
@@ -53,21 +62,29 @@ City data is just a map between the zip codes and city names in the data. It con
 - `city`: string, city name
 - `zip_code`: int, zip code
 
-## Data Quality
-The data is in high quality, no cleaning is needed. There are few measurements related to weather are missing from the data (few cells).
+## Step 3
+## Use Cases & Data Model Choice
+The data is modeled as Star Schema with dimension and fact tables.
 
-Duplicate datetime data are dropped from the time table during ETL process
+The reason this model is chosen is to ease business analysis on the data and allow different Bi tools to used based on the company needs (e.g. marketing team vs. operation team). Examples of the question can be asked on the data are:
+- How demand differ on weekdays vs. weekend?
+- Which dock stations get the most traffic?
+- Where from and to where riders go?
+- How weather (temperature, humidity or rain) affect ridership?
+- Which stations are overladed and should get expansion?
+- Which stations are not profitable?
 
-## Data Model
 The data is after executing the ETL pipeline will be in dimensional model form. There are 3 dimensional tables and 2 fact tables.
 ![dimensional model](https://github.com/OmarAlghamdi/dend-capstone/blob/master/out/model.png)
 
-## The ETL Pipeline
-Since the data is in CSV format, stored in S3 and required date & time  extraction and transformation from the all 4 csv files from all . I chose Spark to do the job because 
-- Sparks's dataframes are suitable for the transformation job.
-- Furthermore, the fact and dimension table are loaded back to S3 in praquet format.
-- The advantage of this is cost saving since the AWS EMR Spark cluster needs to be running only during the ETL process. After that it can be terminated to save cost.
-- Finally, reading data from S3 into spark dataframe and do the transformation there is faster than copying the data to Redshift and transform it and load it into dimensional tables using SQL queries.
+For more details about each filed see the data dictionary at the end of this page.
+
+## Step 4
+## Tools Choice
+- Spark: spark.sql functions and dataframe is better in performing the data transformation for this project than using pure SQL queries with, say, AWS Redshift. The main reason for that SQL queries are not flexible enough to handle the datetime extraction transformation transformation from multiple CSV files to one dimensional table. Each CSV file had it one date format. Additionally, An AWS EMR Spark cluster can be booted during transformation, does not happen frequently, then terminated to save cost
+- S3: S3 is elastic storage service, If the bike share business grow largely in the future, S3 will be able to handle terabytes of data with out need for data migration or to increase database cluster size. Additionally, Storing dimensional tables on S3 is cheaper than always on database cluster, such as AWS Redshift.
+- AWS EMR Cluster for Spark: The advantage of using EMR rather than EC2 instance or other method is that EMR is pre-configured and ready to run spark jobs. A cluster can boot quickly and shutdown after ETL process complete. Using AWS EMR makes it easier in the future to automate the entire ETL process by scheduling AWS Lambda Functions to create a cluster using Infrastructure as Code IaC and submit a spark job to it.
+- Jupyter Notebook: the ETL process has small distinct steps to Extract, Transform & Load the data. using a notebook make more readable allow one step rerun if it fails. I also converted it into a script that can be submitted to a spark cluster
 
 ## How To execute The ETL Process
 It is recommended to run the ETL process in the notebook:
@@ -81,19 +98,17 @@ If you want to run the script:
 - copy the script to the cluster
 - submit a spark job to execute the script
 
+## Step 5
 ## Constricts Regrading Production
-Here are few thins you should not about the ETL pipeline. These notes are based on 'Step 5' of the project instructions.
-
-### Goals and Queries
-As I mentioned above, there are many business related analysis to can be done on the data. Here are few examples:
-- understand bike usage pattern through the day to account for peaks in demand
-- understand where the majority of trips happen to plan future dock station expansions
-- understand bike usage patterns related to weather conditions
+The data model was designed to allow flexible queries to run in order to be able to answer business related questions (some are provided in step 3).
 
 ### Pipeline Automation
-The pipeline can be run step by step through the available notebook. But in production environment the python script should be used to save engineer's time
+Data should be updated at least weekly in this hypothetical scenarios. But since there is no data API or another way to inject data frequently to S3 I left this one. If, say, ETL process would run once a week Data Engineer can afford to run it manually. But down the road Lambda Functions can be used to automate the runs of the python script.
 
-### Scenarios
+Airflow was not used because data is stored on S3 rather and HDFS. Keeping spark cluster running for long time is expensive when it only used for computation. Additionally, Airflow requires a instance to be running all the time time schedule the jobs. While the same job can be achieved down the road through scheduled AWS Lambda Functions to spin a spark cluster using IaC and to execute the ETL script
+
+## Scenarios from The Instructions
+
 - If the data was increased by 100x.
   
   Since the data is extracted from S3 and loaded back to S3, data can increase infinity without any space issues. The only resources will be required to expand overtime is the size and the number of Spark node in a cluster. but since the EMR cluster is only active during the runtime or the ETL process it should not be an Issue
@@ -103,5 +118,72 @@ The pipeline can be run step by step through the available notebook. But in prod
   AWS EMR Spark cluster creation and teardown can be automated through IaC. Data Engineer overseeing the process can use AWS Lambda Functions to trigger cluster creation at 7am each day, run the python script, then teardown the cluster of save money.
 
 - If the database needed to be accessed by 100+ people.
-  
-  Sine the dimensional tables are stored in S3, and S3 is scalable managed service, data engineer should not worry increase in users. Different users can use different BI tools to read the data from S3 without any issue
+
+  In order to be able to provide the dimensional table to more users in the same time, the tables should reside in a cluster with high computation power and bandwidth. Since I used Spark to perform the ETL, CPU power is only required during the process. After that, end users can access the dimensional tables directly from S3. Since S3 is and elastic service, it can manage large simultaneous read request in the same time. End users can point the BI tool to pull data from S3 directly
+
+## Data Dictionary
+`dim_station`
+| Field                 | Type     | Constraint  | description |
+| --------------------- | -------- | ----------- | ----------- |
+| station_id            | int      | primary key |             |
+| station_name          | string   |             |             |
+| lat                   | float    |             | latitude    |
+| long                  | float    |             | longitude   |
+| dock_count            | int      |             |             |
+| city                  | string   |             |             |
+| installation_datetime | datetime |             |             |
+
+`dim_time`
+| Field    | Type     | Constraint  | description       |
+| -------- | -------- | ----------- | ----------------- |
+| datetime | datetime | primary key |                   |
+| second   | int      |             |                   |
+| minute   | int      |             |                   |
+| hour     | int      |             |                   |
+| day      | int      |             |                   |
+| week     | int      |             | week of the year  |
+| month    | int      |             |                   |
+| year     | int      |             |                   |
+| weekday  | int      |             | number of the day |
+
+`dim_weather`
+| Field                | Type     | Constraint              | description                                |
+| -------------------- | -------- | ----------------------- | ------------------------------------------ |
+| datetime             | datetime | primary key (composite) |                                            |
+| max_temperature_f    | int      |                         | temperature in fahrenheit                  |
+| mean_temperature_f   | int      |                         | temperature in fahrenheit                  |
+| min_temperature_f    | int      |                         | temperature in fahrenheit                  |
+| max_humidity         | int      |                         | from 0 to 100                              |
+| mean_humidity        | int      |                         | from 0 to 100                              |
+| min_humidity         | int      |                         | from 0 to 100                              |
+| max_wind_Speed_mph   | int      |                         |                                            |
+| mean_wind_speed_mph  | int      |                         |                                            |
+| precipitation_inches | int      |                         | if it rained                               |
+| events               | string   |                         | status of the weather e.g. rain, fog, etc. |
+| zip_code             | int      | primary key (composite) |                                            |
+
+`fact_trip`
+| Field             | Type     | Constraint  | description                |
+| ----------------- | -------- | ----------- | -------------------------- |
+| trip_id           | int      | primary key |                            |
+| duration          | int      |             | duration in seconds        |
+| bike_id           | int      |             |                            |
+| subscription_type | string   |             | Subscriber or Customer     |
+| start_station_id  | int      | foreign key |                            |
+| end_station_id    | int      | foreign key |                            |
+| datetime_start    | datetime | foreign key | trip start time in minutes |
+| datetime_end      | datetime | foreign key | trip end time in minutes   |
+
+
+
+`fact_status`
+| Field           | Type     | Constraint  | description                 |
+| --------------- | -------- | ----------- | --------------------------- |
+| station_id      | int      | primary key |                             |
+| bikes_available | int      |             |                             |
+| docks_available | int      |             | empty docking spaces        |
+| datetime        | datetime | foreign key | time when data was captured |
+
+
+
+
