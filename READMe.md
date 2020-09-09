@@ -70,10 +70,16 @@ Since the data is in CSV format, stored in S3 and required date & time  extracti
 - Finally, reading data from S3 into spark dataframe and do the transformation there is faster than copying the data to Redshift and transform it and load it into dimensional tables using SQL queries.
 
 ## How To execute The ETL Process
-To run the ETL process in the notebook:
+It is recommended to run the ETL process in the notebook:
 - Create an AWS EMR Spark cluster. 3 or more instances of size `m5.xlarge` is the recommended cluster size to handle the data processing
 - If you are running this ETL process after September 10, 2020 you will need to copy the data from Kaggle (see link above) to your S3 bucket.
 - create upload the notebook to AWS EMR to have the ease of running the ETL processes without connection adn permission configurations.
+
+If you want to run the script:
+- create a cluster save as above
+- ssh into the cluster
+- copy the script to the cluster
+- submit a spark job to execute the script
 
 ## Constricts Regrading Production
 Here are few thins you should not about the ETL pipeline. These notes are based on 'Step 5' of the project instructions.
