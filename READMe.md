@@ -69,6 +69,12 @@ Since the data is in CSV format, stored in S3 and required date & time  extracti
 - The advantage of this is cost saving since the AWS EMR Spark cluster needs to be running only during the ETL process. After that it can be terminated to save cost.
 - Finally, reading data from S3 into spark dataframe and do the transformation there is faster than copying the data to Redshift and transform it and load it into dimensional tables using SQL queries.
 
+## How To execute The ETL Process
+To run the ETL process in the notebook:
+- Create an AWS EMR Spark cluster. 3 or more instances of size `m5.xlarge` is the recommended cluster size to handle the data processing
+- If you are running this ETL process after September 10, 2020 you will need to copy the data from Kaggle (see link above) to your S3 bucket.
+- create upload the notebook to AWS EMR to have the ease of running the ETL processes without connection adn permission configurations.
+
 ## Constricts Regrading Production
 Here are few thins you should not about the ETL pipeline. These notes are based on 'Step 5' of the project instructions.
 
